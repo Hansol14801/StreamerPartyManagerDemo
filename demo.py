@@ -40,7 +40,7 @@ def chat():
     data = request.get_json(force=True)
     name = (data.get("name") or "DemoViewer").strip()
     content = (data.get("content") or "").strip()
-    match = re.match(r"^!시참\s+(.+?#\\S+)\s*$", content, re.I)
+    match = re.match(r"^!시참\s+(.+?#\S+)\s*$", content, re.I)
     if not match or not valid_riot_id(match.group(1)):
         return jsonify(ok=False, message="!시참 GameName#TAG 형식으로 입력해주세요."), 400
 
