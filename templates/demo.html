@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Streamer Party Manager Demo</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div><h1>Streamer Party Manager Demo</h1><p>CHZZK · League Client 연결 없는 공개 시뮬레이션</p></div>
+  <div class="pill ok">DEMO ONLY</div>
+</header>
+<main>
+<section class="card" style="grid-column:1/-1">
+  <h2>안전한 공개 테스트 버전</h2>
+  <p class="muted">이 페이지의 치지직 채팅, LoL 로비, 초대, 내보내기, 게임 진행은 모두 로컬 시뮬레이션입니다. 실제 CHZZK 또는 League Client API 요청을 보내지 않습니다.</p>
+</section>
+<section class="card">
+  <div class="row between"><h2>가상 LoL 로비 <span id="lobbyCount"></span></h2><span id="phase"></span></div>
+  <div id="lobby" class="list"></div>
+  <div class="actions"><button onclick="inviteEmpty()">빈자리 가상 초대</button><button onclick="completeGame()">가상 게임 1판 완료</button></div>
+</section>
+<section class="card">
+  <h2>가상 CHZZK 채팅</h2>
+  <div class="inline"><input id="name" value="DemoViewer" placeholder="닉네임"></div>
+  <div class="inline" style="margin-top:8px"><input id="message" value="!시참 TestPlayer#KR1" placeholder="!시참 GameName#TAG"><button onclick="sendChat()">전송</button></div>
+  <p class="muted">실제 치지직 계정이나 개발자 인증은 필요하지 않습니다.</p>
+  <h2 style="margin-top:20px">대기열</h2><div id="queue" class="list"></div>
+</section>
+<section class="card" style="grid-column:1/-1">
+  <div class="row between"><div><h2>Demo 제어</h2><p class="muted">2판 이상 참가한 시청자는 로테이션 대상 표시가 나타납니다.</p></div><button class="danger" onclick="resetDemo()">초기화</button></div>
+</section>
+</main>
+<footer><strong>Legal Notice</strong><br>Streamer Party Manager isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</footer>
+<div id="toast"></div>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function call(url,opt={}){const r=await fetch(url,opt);const j=await r.json();toast(j.message||'완료');await load();return j}
+function toast(t){const e=document.querySelector('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)}
+async function load(){
+ const s=await (await fetch('/api/state')).json();
+ document.querySelector('#phase').textContent=s.phase;
+ document.querySelector('#lobbyCount').textContent='('+s.lobby.length+'/'+s.capacity+')';
+ document.querySelector('#lobby').innerHTML=s.lobby.map(v=>'<div class="item"><div><b>'+esc(v.name)+'</b><div class="meta">'+esc(v.riot_id)+(v.host?' · HOST':' · '+v.games+'판'+(v.games>=2?' · 로테이션 대상':''))+'</div></div>'+(v.host?'':'<button class="danger" onclick="kick('+v.id+')">가상 내보내기</button>')+'</div>').join('');
+ document.querySelector('#queue').innerHTML=s.queue.length?s.queue.map(v=>'<div class="item"><div><b>'+esc(v.name)+'</b><div class="meta">'+esc(v.riot_id)+'</div></div><button onclick="invite('+v.id+')">가상 초대</button></div>').join(''):'<p class="muted">대기자가 없습니다.</p>';
+}
+function sendChat(){return call('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.querySelector('#name').value,content:document.querySelector('#message').value})})}
+function invite(id){return call('/api/invite/'+id,{method:'POST'})}
+function inviteEmpty(){return call('/api/invite-empty',{method:'POST'})}
+function kick(id){return call('/api/kick/'+id,{method:'POST'})}
+function completeGame(){return call('/api/complete-game',{method:'POST'})}
+function resetDemo(){return call('/api/reset',{method:'POST'})}
+load();setInterval(load,2000);
+</script>
+</body></html>
