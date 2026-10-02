@@ -12,6 +12,7 @@ state = {
     "lobby": [{"riot_id": "Streamer#DEMO", "name": "Streamer (Host)", "games": 0, "host": True}],
     "history": [],
     "next_id": 1,
+    "rotation_games": 2,
 }
 
 def valid_riot_id(value):
@@ -22,6 +23,7 @@ def snapshot():
         "demo": True,
         "phase": state["phase"],
         "capacity": CAPACITY,
+        "rotation_games": state["rotation_games"],
         "queue": state["queue"],
         "lobby": state["lobby"],
         "history": state["history"],
@@ -34,6 +36,18 @@ def index():
 @app.get("/api/state")
 def api_state():
     return jsonify(snapshot())
+
+@app.post("/api/settings/rotation")
+def set_rotation():
+    data = request.get_json(force=True) or {}
+    try:
+        games = int(data.get("rotation_games", 2))
+    except (TypeError, ValueError):
+        return jsonify(ok=False, message="로테이션 판수는 숫자로 입력해주세요."), 400
+    if games < 1 or games > 10:
+        return jsonify(ok=False, message="로테이션 판수는 1~10판으로 설정해주세요."), 400
+    state["rotation_games"] = games
+    return jsonify(ok=True, message=f"로테이션 기준을 {games}판으로 변경했습니다.")
 
 @app.post("/api/chat")
 def chat():
